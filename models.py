@@ -14,7 +14,7 @@ class Day:
         return date_obj.strftime('%A')
 
     def __str__(self):
-        return f"{self.date} ({self.day_of_week}) - {self.number_of_people} people"
+        return f"{self.date} ({self.day_of_week})"
 
 
 class Person:
@@ -26,4 +26,6 @@ class Person:
         self.unavailable = []
         self.working_saturdays = 0
         self.working_sundays = 0
+        self.assigned_saturdays = 0
+        self.assigned_sundays = 0
         self.exclude = False

@@ -1,10 +1,11 @@
-from tkinter import (filedialog, messagebox, Label, Spinbox,Button, END, Toplevel, BooleanVar, Checkbutton, Tk, Frame,
+from tkinter import (filedialog, messagebox, Label, Spinbox, Button, END, Toplevel, BooleanVar, Checkbutton, Tk, Frame,
                      Entry)
 from tkcalendar import Calendar
 from datetime import datetime, timedelta
 from models import Day, Person
 from sat_sun_ratio import count_weekend_days
 from unavailable_check import check_people_availability
+import config
 import pandas
 import random
 
@@ -39,23 +40,24 @@ def update_selected_days_list():
         people_spinbox.delete(0, "end")
         people_spinbox.insert(0, str(day.number_of_people))  # Value from day object as a default
         people_spinbox.grid(row=idx, column=1, padx=5, pady=2)
+
+        people_spinbox.config(command=lambda d=day, s=people_spinbox: update_day_people(d, s))
+
         people_entries.append((day, people_spinbox))
 
         remove_button = Button(listbox_frame, text="Remove", command=lambda d=day: remove_day(d))
         remove_button.grid(row=idx, column=2, padx=5, pady=2)
 
 
+def update_day_people(day, spinbox):
+    try:
+        day.number_of_people = int(spinbox.get())
+    except ValueError:
+        day.number_of_people = 0
+
+
 def remove_day(day):
     selected_days.remove(day)
-    update_selected_days_list()
-
-
-def update_number_of_people():
-    for day, spinbox in people_entries:
-        try:
-            day.number_of_people = int(spinbox.get())
-        except ValueError:
-            day.number_of_people = 0
     update_selected_days_list()
 
 
@@ -99,7 +101,31 @@ def update_working_weekend_days_ratio(shifts_dict, people):
                 person.working_sundays = ratio_list[1]
 
 
+def check_dates():
+    now = datetime.now()
+    lower_bound = now - timedelta(days=config.HOLIDAY_MONTHS_SEARCH_RANGE * 30)
+    upper_bound = now + timedelta(days=config.HOLIDAY_MONTHS_SEARCH_RANGE * 30)
+    for day in selected_days:
+        day_date = datetime.strptime(day.date, '%d/%m/%Y')
+        if not (lower_bound <= day_date <= upper_bound):
+            messagebox.showinfo("Warning!", f"{day.date} is outside the scope of the employee availability search! "
+                                            f"The search is currently set to +/- {config.HOLIDAY_MONTHS_SEARCH_RANGE} "
+                                            f"months. Consider changing HOLIDAY_MONTHS_SEARCH_RANGE in config file.")
+
+
+def reset_assignments():
+    for person in people_in_team:
+        person.working_days = []
+        person.working_saturdays -= person.assigned_saturdays
+        person.assigned_saturdays = 0
+        person.working_sundays -= person.assigned_sundays
+        person.assigned_sundays = 0
+    for day in selected_days:
+        day.assigned_people = []
+
+
 def assign_people_to_days(days, people):
+    check_dates()
     for day in days:
         available_people = [
             person for person in people
@@ -126,6 +152,7 @@ def assign_people_to_days(days, people):
 
         def assign_people(people_list, num_needed):
             nonlocal assigned_people
+            random.shuffle(people_list)
             for person in people_list:
                 if num_needed == 0:
                     break
@@ -140,8 +167,10 @@ def assign_people_to_days(days, people):
                     person.working_days.append(day.date)
                     if day.day_of_week == 'Saturday':
                         person.working_saturdays += 1
+                        person.assigned_saturdays += 1
                     elif day.day_of_week == 'Sunday':
                         person.working_sundays += 1
+                        person.assigned_sundays += 1
                     num_needed -= 1
 
         assign_people(available_people_with_correct_ratio_nw, day.number_of_people)
@@ -158,8 +187,10 @@ def assign_people_to_days(days, people):
                 random_person.working_days.append(day.date)
                 if day.day_of_week == 'Saturday':
                     random_person.working_saturdays += 1
+                    random_person.assigned_saturdays += 1
                 elif day.day_of_week == 'Sunday':
                     random_person.working_sundays += 1
+                    random_person.assigned_sundays += 1
                 messagebox.showwarning(
                     "Warning",
                     f"No available people at {day.date}, assigned random person!."
@@ -169,6 +200,20 @@ def assign_people_to_days(days, people):
 
     summary = "\n".join([f"{day.date} - {', '.join(day.assigned_people)}" for day in selected_days])
     messagebox.showinfo("Assignments", summary)
+    reset_assignments()
+
+
+def show_all_possible_assignments(days, people):
+    check_dates()
+    for day in days:
+        available_people = [
+            person for person in people
+            if not person.exclude and day.date not in person.unavailable
+        ]
+        day.assigned_people = [person.initials for person in available_people]
+    summary = "\n".join([f"{day.date} - {', '.join(day.assigned_people)}" for day in selected_days])
+    messagebox.showinfo("Assignments", summary)
+    reset_assignments()
 
 
 def open_exclude_people_window():
@@ -185,8 +230,8 @@ def open_exclude_people_window():
         checkboxes.append((person, var))
 
     def apply_changes():
-        for person, var in checkboxes:
-            person.exclude = var.get()
+        for x_person, x_var in checkboxes:
+            x_person.exclude = x_var.get()
         exclude_window.destroy()
 
     apply_button = Button(exclude_window, text="Apply", command=apply_changes)
@@ -214,8 +259,8 @@ shifts_path_entry.grid(row=1, column=1, padx=5, pady=5)
 open_shifts_button = Button(path_frame, text="Choose file", command=lambda: open_file_explorer(shifts_path_entry))
 open_shifts_button.grid(row=1, column=2, padx=5, pady=5)
 
-load_files_button = Button(root, text="Load Files", command=process_file)
-load_files_button.pack(pady=10)
+load_files_button = Button(path_frame, text="Load Files", command=process_file)
+load_files_button.grid(row=1, column=3, padx=5, pady=5)
 
 cal = Calendar(root, selectmode='day',
                year=datetime.now().year, month=datetime.now().month + 1,
@@ -225,23 +270,29 @@ cal.pack(pady=20)
 selected_days = []
 people_entries = []
 
-Button(root, text="Add day", command=add_selected_day).pack(pady=10)
+calendar_buttons_frame = Frame(root)
+calendar_buttons_frame.pack(pady=10)
+
+exclude_button = Button(calendar_buttons_frame, text="Exclude people", command=open_exclude_people_window)
+exclude_button.grid(row=0, column=0, padx=5)
+
+add_day_button = Button(calendar_buttons_frame, text="Add selected day", command=add_selected_day)
+add_day_button.grid(row=0, column=1, padx=5)
+
 
 listbox_frame = Frame(root)
 listbox_frame.pack(pady=20)
 
-people_button_frame = Frame(root)
-people_button_frame.pack(pady=10)
+assign_button_frame = Frame(root)
+assign_button_frame.pack(pady=10)
 
-update_button = Button(people_button_frame, text="Update Number of People", command=update_number_of_people)
-update_button.grid(row=0, column=0, padx=5)
+all_possible_assignments_button = Button(assign_button_frame, text="Show all availabilities for selected days",
+                                         command=lambda: show_all_possible_assignments(selected_days, people_in_team))
+all_possible_assignments_button.grid(row=0, column=0, padx=5)
 
-exclude_button = Button(people_button_frame, text="Exclude people", command=open_exclude_people_window)
-exclude_button.grid(row=0, column=1, padx=5)
-
-assign_button = Button(root, text="Assign People to Days",
+assign_button = Button(assign_button_frame, text="Assign people to days",
                        command=lambda: assign_people_to_days(selected_days, people_in_team))
-assign_button.pack(pady=10)
+assign_button.grid(row=0, column=1, padx=5)
 
 version_frame = Frame(root)
 version_frame.pack(side='bottom', anchor='se', padx=10, pady=10)
@@ -255,12 +306,15 @@ try:
     people_in_team = []
     for n in names_list:
         new_person = Person(n[0], n[1], n[2])
+        for initials in config.DEFAULT_EXCLUDED_PEOPLE:
+            if initials == new_person.initials:
+                new_person.exclude = True
         people_in_team.append(new_person)
-
     shift_file_names = [person.shifts_name for person in people_in_team]
 
 except FileNotFoundError:
     messagebox.showerror("Error", "File names_initials.csv was not found!")
     root.destroy()
 
-root.mainloop()
+if __name__ == '__main__':
+    root.mainloop()
