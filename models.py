@@ -4,12 +4,11 @@ from datetime import datetime
 class Day:
     def __init__(self, date):
         self.date = date
-        self.day_of_week = self.get_day_of_week()
-        self.number_of_people = 0
+        self.day_of_week = self.get_name_of_weekday()
+        self.number_of_people = 2
         self.assigned_people = []
 
-    # Used to display which day of the week of a given day
-    def get_day_of_week(self):
+    def get_name_of_weekday(self):
         date_obj = datetime.strptime(self.date, '%d/%m/%Y')
         return date_obj.strftime('%A')
 
@@ -23,6 +22,7 @@ class Person:
         self.holiday_name = holiday_name
         self.shifts_name = shifts_name
         self.working_days = []
+        self.forced_working_days = []
         self.unavailable = []
         self.working_saturdays = 0
         self.working_sundays = 0

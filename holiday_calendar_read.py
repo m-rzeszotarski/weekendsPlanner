@@ -1,11 +1,18 @@
 from openpyxl import load_workbook
 from datetime import datetime, timedelta
+from tkinter import messagebox
 import config
 
 
+# Read holiday calendar to check people unavailability
 def check_people_availability(file_path):
     wb = load_workbook(file_path)
-    sheet = wb['USP scheduling']
+    try:
+        sheet = wb[config.HOLIDAY_SHEET_NAME]
+    except KeyError:
+        messagebox.showinfo("Error", f"Worksheet '{config.HOLIDAY_SHEET_NAME}' in '{config.HOLIDAY_FILE_NAME}' does "
+                                     f"not exist")
+        return
 
     unavailable_dict = {}
     now = datetime.now()
@@ -20,7 +27,7 @@ def check_people_availability(file_path):
         if date_value is None:
             continue
 
-        # Date conversion "month/day/year"
+        # Date conversion "day/month/year"
         date_str = date_value.strftime('%d/%m/%Y')
 
         # Look for unavailability only in selected time range
