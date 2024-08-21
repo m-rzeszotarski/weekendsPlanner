@@ -9,4 +9,3 @@ tkinter - This library provides the graphical user interface (GUI) for the appli
 tkcalendar - A calendar widget specifically designed for use with Tkinter, which allows users to easily select dates within the GUI
 pandas - simplifies working with CSV files
 openpyxl - A library that facilitates reading and writing Excel files in the .xlsx format, enabling the application to efficiently process and update the Excel files used for scheduling and employee availability
-
