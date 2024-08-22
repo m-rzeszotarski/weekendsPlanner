@@ -4,8 +4,8 @@ from tkinter import messagebox
 import config
 
 
-# Read holiday calendar to check people unavailability
-def check_people_availability(file_path):
+# Read holiday calendar to check people unavailability or holidays (find keywords in table)
+def check_people_fields(file_path, keyword_list):
     wb = load_workbook(file_path)
     try:
         sheet = wb[config.HOLIDAY_SHEET_NAME]
@@ -14,7 +14,7 @@ def check_people_availability(file_path):
                                      f"not exist")
         return
 
-    unavailable_dict = {}
+    holiday_dict = {}
     now = datetime.now()
     lower_bound = now - timedelta(days=config.HOLIDAY_MONTHS_SEARCH_RANGE * 30)
     upper_bound = now + timedelta(days=config.HOLIDAY_MONTHS_SEARCH_RANGE * 30)
@@ -37,13 +37,13 @@ def check_people_availability(file_path):
                 person_name = sheet.cell(row=4, column=col).value
                 availability = sheet.cell(row=row, column=col).value
 
-                for unavailable_word in config.UNAVAILABLE_WORDS_LIST:
-                    if availability == unavailable_word:
+                for keyword in keyword_list:
+                    if availability == keyword:
                         # Add person to list
-                        if date_str not in unavailable_dict:
-                            unavailable_dict[date_str] = []
-                        unavailable_dict[date_str].append(person_name)
+                        if date_str not in holiday_dict:
+                            holiday_dict[date_str] = []
+                        holiday_dict[date_str].append(person_name)
 
     wb.close()
 
-    return unavailable_dict
+    return holiday_dict

@@ -24,6 +24,7 @@ class Person:
         self.working_days = []
         self.forced_working_days = []
         self.unavailable = []
+        self.holiday = []
         self.working_saturdays = 0
         self.working_sundays = 0
         self.assigned_saturdays = 0

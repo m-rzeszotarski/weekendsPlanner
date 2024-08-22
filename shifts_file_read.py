@@ -1,11 +1,11 @@
 from openpyxl import load_workbook
-import config
+import datetime
 
 
 def count_weekend_days(file_path, shift_names):
     wb = load_workbook(file_path)
-    # Search for sheet names with 2024 in title
-    sheets_to_search = [sheet for sheet in wb.sheetnames if config.YEAR in sheet]
+    # Search for sheet names with current year in title
+    sheets_to_search = [sheet for sheet in wb.sheetnames if datetime.datetime.now().strftime('%Y') in sheet]
     # Create dictionary {name: [number of WSat (working saturdays), number of WSun (working sundays)]}
     results_dict = {name: [0, 0] for name in shift_names}
 
