@@ -3,6 +3,8 @@
 This application is designed to help plan weekend work in the department of company I work for. It operates by reading two Excel files: one containing the holiday calendar with employee availability and another with the shift schedule from the previous months.
 The application first identifies which employees are available on the selected weekend days. Then analyzes each employee’s working Saturday/working Sunday ratio and the total number of weekend days worked in the selected month. Based on this information, the application assigns employees to weekend shifts in the fairest way possible, ensuring an even distribution of workload.
 
+WARNING: The tool reads availability within ±3 months from today's date. Exemplary files may not be up to date when you open them, so unavailable dates will not be found.
+
 ## Packages
 
 - tkinter - This library provides the graphical user interface (GUI) for the application, allowing users to interact with the program through a visually intuitive and user-friendly interface
