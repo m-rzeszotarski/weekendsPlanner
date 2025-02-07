@@ -370,7 +370,8 @@ def open_edit_window(section, cfg):
     def save_changes():
         for xkey, xentry in entries.items():
             cfg.set(section, xkey, xentry.get())
-        with open('config.ini', 'w') as configfile:
+        # Ensure the file is written with UTF-8 encoding
+        with open('config.ini', 'w', encoding='utf-8') as configfile:
             cfg.write(configfile)
         edit_window.destroy()  # Close the edit window after saving changes
 
@@ -393,6 +394,20 @@ def open_edit_window(section, cfg):
     edit_button.pack(pady=10)
 
 
+def get_current_time(request):
+    current_month = datetime.now().month + 1
+    current_year = datetime.now().year
+
+    if current_month == 13:
+        current_month = 1
+        current_year += 1
+
+    return {
+        "month": current_month,
+        "year": current_year
+    }.get(request)
+
+
 def open_options_window():
     options_window = Toplevel(root)
     options_window.title("Options")
@@ -405,8 +420,11 @@ def open_options_window():
 
     # Create buttons for each section in the config file
     for section in cfg.sections():
-        Button(options_window, text=f"Edit {section}", command=lambda s=section: open_edit_window(s, cfg)).pack(
-            pady=5)
+        Button(
+            options_window,
+            text=f"Edit {section}",
+            command=lambda s=section: open_edit_window(s, cfg)
+        ).pack(pady=5)
 
     apply_button = Button(options_window, text="Close", command=options_window.destroy)
     apply_button.pack(pady=5)
@@ -437,7 +455,7 @@ load_files_button = Button(path_frame, text="Load Files", command=process_file)
 load_files_button.grid(row=1, column=3, padx=5, pady=5)
 
 cal = Calendar(root, selectmode='day',
-               year=datetime.now().year, month=datetime.now().month + 1,
+               year=get_current_time("year"), month=get_current_time("month"),
                date_pattern='yyyy-mm-dd')  # Change of date format in calendar
 cal.pack(pady=20)
 
@@ -470,7 +488,7 @@ assign_button.grid(row=0, column=1, padx=5)
 version_frame = Frame(root)
 version_frame.pack(side='bottom', anchor='se', padx=10, pady=10)
 
-version_label = Label(version_frame, text="Created by MIRZ (v1.2)")
+version_label = Label(version_frame, text="Created by MIRZ (v1.11)")
 version_label.pack(anchor='se')
 
 options_frame = Frame(root)
