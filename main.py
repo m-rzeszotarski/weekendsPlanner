@@ -500,8 +500,8 @@ options_button.pack(anchor='se')
 # Try to load names-initials file which allow to assign data from two Excel files to correct person
 people_in_team = read_initials_file()
 
-# Check whether holiday and shift file is in the main directory
-check_and_load_files()
 
 if __name__ == '__main__':
+    # Check whether holiday and shift file is in the main directory
+    check_and_load_files()
     root.mainloop()
